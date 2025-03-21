@@ -46,7 +46,7 @@ static FixedPointBinary ConvertDecimalToFixedPointBinary(decimal value, int prec
     }
 
     return result;
-};
+}
 
 
 
@@ -83,7 +83,7 @@ static decimal ConvertFixedPointBinaryToDecimal(FixedPointBinary value, int prec
 
     // Can now parse string as decimal result
     return decimal.Parse(result);
-};
+}
 
 
 
@@ -125,15 +125,15 @@ static FixedPointBinary CalculatePi(int precision)
         var vs = v >> (4 * k);
 
         Console.WriteLine($"{YELLOW}k = {k:d2}{NORMAL}");
-        Console.WriteLine($"    {a.ToString($"b{size}")[..size]} (4/{dv + 1:d3})");
-        Console.WriteLine($"  - {b.ToString($"b{size}")[..size]} (2/{dv + 4:d3})");
-        Console.WriteLine($"  - {c.ToString($"b{size}")[..size]} (1/{dv + 5:d3})");
-        Console.WriteLine($"  - {d.ToString($"b{size}")[..size]} (1/{dv + 6:d3})");
-        Console.WriteLine($"{GREEN}  = {v.ToString($"b{size}")[..size]} {v.ToString($"x{size/4}")[..(size/4)]}{NORMAL}");
-        Console.WriteLine($" >> {vs.ToString($"b{size}")[..size]} {vs.ToString($"x{size/4}")[..(size/4)]}");
-        Console.WriteLine($"  + {sum.ToString($"b{size}")[..size]} {sum.ToString($"x{size/4}")[..(size/4)]}");
+        Console.WriteLine($"    {a.ToString($"b{size}")[..size]} {a.ToHexString(size)} (4/{dv + 1:d3})");
+        Console.WriteLine($"  - {b.ToString($"b{size}")[..size]} {b.ToHexString(size)} (2/{dv + 4:d3})");
+        Console.WriteLine($"  - {c.ToString($"b{size}")[..size]} {c.ToHexString(size)} (1/{dv + 5:d3})");
+        Console.WriteLine($"  - {d.ToString($"b{size}")[..size]} {d.ToHexString(size)} (1/{dv + 6:d3})");
+        Console.WriteLine($"{GREEN}  = {v.ToString($"b{size}")[..size]} {v.ToHexString(size)}{NORMAL}");
+        Console.WriteLine($" >> {vs.ToString($"b{size}")[..size]} {vs.ToHexString(size)}");
+        Console.WriteLine($"  + {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}");
         sum += vs;
-        Console.WriteLine($"{GREEN}  = {sum.ToString($"b{size}")[..size]} {sum.ToString($"x{size/4}")[..(size/4)]}\n{NORMAL}");
+        Console.WriteLine($"{GREEN}  = {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}\n{NORMAL}");
     }
 
     // Create bit masks required to isolate integral and fractional parts when multiplying
@@ -161,4 +161,9 @@ record FixedPointBinary(byte IntegralPart, BigInteger FractionalPart, int Precis
 
     public override string ToString() =>
         $"{IntegralPart:b8}.{FractionalPart.ToString($"b{Precision}")[..Precision]} (0x{IntegralPart:x2}.{FractionalPart.ToString($"x{HexPrecision}")[..HexPrecision]})";
+}
+
+static class BigIntegerExtensions
+{
+    public static string ToHexString(this BigInteger v, int size) => v.ToString($"x{size / 4}")[..(size / 4)];
 }
