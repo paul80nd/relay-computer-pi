@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 
+// ****** Using Reciprocals instead of native divide
+
 // Program to sense check approach for calculating PI on my 8-bit relay computer using
 // the Bailey-Borwein-Plouffe formula (which calculates the first n digits of Pi in base 16).
 // This program will also provide values which can confirm the relay computer's output.
@@ -117,10 +119,10 @@ static FixedPointBinary CalculatePi(int precision)
     for (int k = 0; k < 17; k++)
     {
         var dv = 8 * k;
-        var a = (new BigInteger(4) << (precision)) / (dv + 1);
-        var b = (new BigInteger(2) << (precision)) / (dv + 4);
-        var c = (new BigInteger(1) << (precision)) / (dv + 5);
-        var d = (new BigInteger(1) << (precision)) / (dv + 6);
+        var a = Reciprocal(dv + 1, precision + 2);
+        var b = Reciprocal(dv + 4, precision + 1);
+        var c = Reciprocal(dv + 5, precision);
+        var d = Reciprocal(dv + 6, precision);
         var v = a - b - c - d;
         var vs = v >> (4 * k);
 
@@ -142,7 +144,32 @@ static FixedPointBinary CalculatePi(int precision)
     return new FixedPointBinary((byte)((sum & integralMask) >> precision), sum & fractionalMask, precision);
 }
 
+// Function to calculate a reciprocal to given precision
+// Number is assumed to fit within 8-bits
+// Result will be a BigInteger representing a fixed point binary with given precision
+static BigInteger Reciprocal(int number, int precision, bool verbose = false)
+{
+    if (verbose) Console.WriteLine($"    Reciprocal 1/{number}");
+    var a = 0;                  // Remainder variable (starts with value of 1)
+    var q = new BigInteger(0);  // Quotient variable
 
+    for (int c = precision; c >= 0; c--)
+    {
+        var sign = (a & 0x100) == 0x100;    // Check sign at 9th bit
+        q <<= 1;                            // Left shift quotient
+        a <<= 1;                            // Left shift remainder
+        a &= 0x1FF;                         // and mask out to 9 bits
+
+        if (c == precision) a = 1;          // If this is the first iteration we set a = 1
+
+        a += sign ? number : -number;       // Add or subtract number based on sign before shift
+
+        if ((a & 0x100) == 0) q |= 1;       // If sign at 9th bit set lsb of q
+
+        if (verbose) Console.WriteLine($"    {c:d2} {a.ToString("b9")[^9..]} {q.ToString($"b{precision}")[..precision]} {q.ToHexString(precision)}");
+    }
+    return q;
+}
 
 
 
