@@ -116,7 +116,7 @@ static FixedPointBinary CalculatePi(int precision)
     var size = precision + 4;       // Full size of values allow extra word for integral part
     var sum = new BigInteger(0);    // Variable to store sum
 
-    for (int k = 0; k < 17; k++)
+    for (int k = 0; k < 16; k++)
     {
         var dv = 8 * k;
         var a = Reciprocal(dv + 1, precision + 2);
@@ -155,18 +155,18 @@ static BigInteger Reciprocal(int number, int precision, bool verbose = false)
 
     for (int c = precision; c >= 0; c--)
     {
-        var sign = (a & 0x100) == 0x100;    // Check sign at 9th bit
+        var sign = (a & 0x80) == 0x80;      // Check sign at 8th bit
         q <<= 1;                            // Left shift quotient
         a <<= 1;                            // Left shift remainder
-        a &= 0x1FF;                         // and mask out to 9 bits
+        a &= 0xFF;                          // and mask out to 8 bits
 
         if (c == precision) a = 1;          // If this is the first iteration we set a = 1
 
         a += sign ? number : -number;       // Add or subtract number based on sign before shift
 
-        if ((a & 0x100) == 0) q |= 1;       // If sign at 9th bit set lsb of q
+        if ((a & 0x80) == 0) q |= 1;        // If sign at 8th bit set lsb of q
 
-        if (verbose) Console.WriteLine($"    {c:d2} {a.ToString("b9")[^9..]} {q.ToString($"b{precision}")[..precision]} {q.ToHexString(precision)}");
+        if (verbose) Console.WriteLine($"    {c:d2} {a.ToString("b8")[^8..]} {q.ToString($"b{precision}")[..precision]} {q.ToHexString(precision)}");
     }
     return q;
 }
