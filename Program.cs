@@ -1,7 +1,5 @@
 ﻿using System.Numerics;
 
-// *** Only calculate reciprocal to number of places required for right shift (plus colouring and tidy up)
-
 // Program to sense check approach for calculating PI on my 8-bit relay computer using
 // the Bailey-Borwein-Plouffe formula (which calculates the first n digits of Pi in base 16).
 // This program will also provide values which can confirm the relay computer's output.
@@ -102,7 +100,7 @@ var roundedCalcPiBin = calcPiBin with           // to allow truncating result to
 
 Console.WriteLine($"{GREEN}\nOutcome:{(roundedCalcPiBin == piBin ? GREEN : RED)}");
 Console.WriteLine($"Calculated PI Value: {calcPiBin}");
-Console.WriteLine($"Truncated to 17bp:   {roundedCalcPiBin}");
+Console.WriteLine($"Truncated to 17hp:   {roundedCalcPiBin}");
 Console.WriteLine($"Known PI Value:      {piBin}\n{NORMAL}");
 
 var roundedCalcPiDec = ConvertFixedPointBinaryToDecimal(roundedCalcPiBin, 20);
@@ -124,11 +122,10 @@ static FixedPointBinary CalculatePi(int precision)
         var c = Reciprocal(5, precision);
         var d = Reciprocal(6, precision);
         var v = a - b - c - d;
+        sum += v;
 
         print(0, 0, a, b, c, d, v, precision);
-        Console.WriteLine($"  + {sum.ToBinaryString(size)} {sum.ToHexString(size)}");
-        sum += v;
-        Console.WriteLine($"{GREEN}  = {sum.ToBinaryString(size)} {sum.ToHexString(size)}\n{NORMAL}");
+        Console.WriteLine();
     }
 
     // We then enter a loop for the rest as we need all four reciprocals calculating.
@@ -147,9 +144,9 @@ static FixedPointBinary CalculatePi(int precision)
         var v = a - b - c - d;
 
         print(k, dv, a, b, c, d, v, rsize);
-        Console.WriteLine($"  + {sum.ToBinaryString(size)} {sum.ToHexString(size)}");
+        Console.WriteLine($"  + {sum.ToBinaryString(size)} | {sum.ToHexString(size)}");
         sum += v;
-        Console.WriteLine($"{GREEN}  = {sum.ToBinaryString(size)} {sum.ToHexString(size)}\n{NORMAL}");
+        Console.WriteLine($"{GREEN}  = {sum.ToBinaryString(size)} | {sum.ToHexString(size)}\n{NORMAL}");
     }
 
     // Create bit masks required to isolate integral and fractional parts when multiplying
@@ -163,11 +160,11 @@ static FixedPointBinary CalculatePi(int precision)
         var psize = rsize + 4;
         var ssize = size - psize;
         Console.WriteLine($"{YELLOW}k = {k:d2}{NORMAL}");
-        Console.WriteLine($"    {a.ToBinaryString(psize, ssize)} {a.ToHexString(psize, ssize)} (4/{dv + 1:d3}) >> {ssize}");
-        Console.WriteLine($"  - {b.ToBinaryString(psize, ssize)} {b.ToHexString(psize, ssize)} (2/{dv + 4:d3}) >> {ssize}");
-        Console.WriteLine($"  - {c.ToBinaryString(psize, ssize)} {c.ToHexString(psize, ssize)} (1/{dv + 5:d3}) >> {ssize}");
-        Console.WriteLine($"  - {d.ToBinaryString(psize, ssize)} {d.ToHexString(psize, ssize)} (1/{dv + 6:d3}) >> {ssize}");
-        Console.WriteLine($"{GREEN}  = {v.ToBinaryString(psize, ssize)} {v.ToHexString(psize, ssize)}{NORMAL}");
+        Console.WriteLine($"    {a.ToBinaryString(psize, ssize)} | {a.ToHexString(psize, ssize)} (4/{dv + 1:d3}) >> {ssize}");
+        Console.WriteLine($"  - {b.ToBinaryString(psize, ssize)} | {b.ToHexString(psize, ssize)} (2/{dv + 4:d3}) >> {ssize}");
+        Console.WriteLine($"  - {c.ToBinaryString(psize, ssize)} | {c.ToHexString(psize, ssize)} (1/{dv + 5:d3}) >> {ssize}");
+        Console.WriteLine($"  - {d.ToBinaryString(psize, ssize)} | {d.ToHexString(psize, ssize)} (1/{dv + 6:d3}) >> {ssize}");
+        Console.WriteLine($"{GREEN}  = {v.ToBinaryString(psize, ssize)} | {v.ToHexString(psize, ssize)}{NORMAL}");
     }
 }
 
@@ -220,5 +217,5 @@ record FixedPointBinary(byte IntegralPart, BigInteger FractionalPart, int Precis
 static class BigIntegerExtensions
 {
     public static string ToHexString(this BigInteger v, int psize, int ssize = 0) => $"{new string('·', ssize / 4)}{v.ToString($"x{psize / 4}")[..(psize / 4)]}";
-    public static string ToBinaryString(this BigInteger v, int psize, int ssize = 0) => $"{new string('·', ssize)}{v.ToString($"b{psize}")[..psize]}";
+    public static string ToBinaryString(this BigInteger v, int psize, int ssize = 0) => string.Join(' ', $"{new string('·', ssize)}{v.ToString($"b{psize}")[..psize]}".Chunk(8).Select(cs => new string(cs)));
 }
