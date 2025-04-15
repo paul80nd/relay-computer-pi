@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 
+// *** Only calculate reciprocal to number of places required for right shift (plus colouring and tidy up)
+
 // Program to sense check approach for calculating PI on my 8-bit relay computer using
 // the Bailey-Borwein-Plouffe formula (which calculates the first n digits of Pi in base 16).
 // This program will also provide values which can confirm the relay computer's output.
@@ -14,13 +16,14 @@ const decimal PI = 3.141592653589793238462M;
 #region Console Colour Helpers
 const string NORMAL = "\x1b[39m";
 const string GREEN = "\x1b[92m";
+const string RED = "\x1b[31m";
 const string YELLOW = "\x1b[93m";
 #endregion
 
 
 
 // Part A - Demonstrate converting the decimal value of PI to a fixed point binary value
-Console.WriteLine("\nA) Convert known PI Decimal to Fixed Point Binary:\n");
+Console.WriteLine($"{YELLOW}\nA) Convert known PI Decimal to Fixed Point Binary:\n{NORMAL}");
 var piBin = ConvertDecimalToFixedPointBinary(PI, 17 * 4);
 
 // Function to convert decimal to fixed point binary up to given precision by 
@@ -51,11 +54,11 @@ static FixedPointBinary ConvertDecimalToFixedPointBinary(decimal value, int prec
 
 
 // Part B - Demonstrate converting the fixed point binary value back to decimal
-Console.WriteLine("\n\nB) Convert known PI Fixed Point Binary back to Decimal:\n");
+Console.WriteLine($"\n\n{YELLOW}B) Convert known PI Fixed Point Binary back to Decimal:\n{NORMAL}");
 var piDec = ConvertFixedPointBinaryToDecimal(piBin, 20);
-Console.WriteLine("\nOutcome:");
+Console.WriteLine($"\n{GREEN}Outcome:");
 Console.WriteLine($"PI Original Value: {PI} ({PI.Scale} dp)");
-Console.WriteLine($"PI From Roundtrip: {piDec}  ({piDec.Scale} dp)");
+Console.WriteLine($"PI From Roundtrip: {piDec}  ({piDec.Scale} dp){NORMAL}");
 
 // Function to convert fixed point binary to decimal up to given precision by
 // repeated x10 multiplication taking off the integral value each time.
@@ -89,7 +92,7 @@ static decimal ConvertFixedPointBinaryToDecimal(FixedPointBinary value, int prec
 
 
 // Part C - Use Bailey-Borwein-Plouffe formula to calculate PI in base 16 (to 17 hex digit precision)
-Console.WriteLine("\n\nC) Calculate PI using Bailey-Borwein-Plouffe formula:\n");
+Console.WriteLine($"{YELLOW}\n\nC) Calculate PI using Bailey-Borwein-Plouffe formula:\n{NORMAL}");
 var calcPiBin = CalculatePi((17 + 2) * 4);      // Calculate PI with extra 2 hex digits of precision
 var roundedCalcPiBin = calcPiBin with           // to allow truncating result to 17 hex digits
 {
@@ -97,15 +100,15 @@ var roundedCalcPiBin = calcPiBin with           // to allow truncating result to
     Precision = calcPiBin.Precision - 8
 };
 
-Console.WriteLine("\nOutcome:");
+Console.WriteLine($"{GREEN}\nOutcome:{(roundedCalcPiBin == piBin ? GREEN : RED)}");
 Console.WriteLine($"Calculated PI Value: {calcPiBin}");
 Console.WriteLine($"Truncated to 17bp:   {roundedCalcPiBin}");
-Console.WriteLine($"Known PI Value:      {piBin}\n");
+Console.WriteLine($"Known PI Value:      {piBin}\n{NORMAL}");
 
 var roundedCalcPiDec = ConvertFixedPointBinaryToDecimal(roundedCalcPiBin, 20);
-Console.WriteLine("\nOutcome:");
-Console.WriteLine($"PI Original Value:   {roundedCalcPiDec} ({roundedCalcPiDec.Scale} dp)");
-Console.WriteLine($"Calculated PI Value: {piDec} ({piDec.Scale} dp)");
+Console.WriteLine($"{GREEN}\nOutcome:{(roundedCalcPiDec == piDec ? GREEN : RED)}");
+Console.WriteLine($"Calculated PI Value: {roundedCalcPiDec} ({roundedCalcPiDec.Scale} dp)");
+Console.WriteLine($"PI Original Value:   {piDec} ({piDec.Scale} dp){NORMAL}");
 
 // Function to calculate PI in base 16 using the Bailey-Borwein-Plouffe formula
 // Calculation is performed to given fractional part precision (in bits).
@@ -114,20 +117,39 @@ static FixedPointBinary CalculatePi(int precision)
     var size = precision + 4;       // Full size of values allow extra word for integral part
     var sum = new BigInteger(0);    // Variable to store sum
 
-    for (int k = 0; k < 16; k++)
+    // For the first iteration we can hard code a and b which saves two reciprocal calculations
     {
-        var dv = 8 * k;
-        var a = Reciprocal(dv + 1, precision + 2);
-        var b = Reciprocal(dv + 4, precision + 1);
-        var c = Reciprocal(dv + 5, precision);
-        var d = Reciprocal(dv + 6, precision);
+        var a = new BigInteger(1) << (precision + 2); // a = 4/1 = 4
+        var b = new BigInteger(1) << (precision - 1); // b = 2/4 = 0.5
+        var c = Reciprocal(5, precision);
+        var d = Reciprocal(6, precision);
         var v = a - b - c - d;
-        var vs = v >> (4 * k);
 
-        print(k, dv, a, b, c, d, v, vs);
-        Console.WriteLine($"  + {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}");
-        sum += vs;
-        Console.WriteLine($"{GREEN}  = {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}\n{NORMAL}");
+        print(0, 0, a, b, c, d, v, precision);
+        Console.WriteLine($"  + {sum.ToBinaryString(size)} {sum.ToHexString(size)}");
+        sum += v;
+        Console.WriteLine($"{GREEN}  = {sum.ToBinaryString(size)} {sum.ToHexString(size)}\n{NORMAL}");
+    }
+
+    // We then enter a loop for the rest as we need all four reciprocals calculating.
+    // We calculate a to 2 extra bits and b to 1 extra bit effectively multiplying them by 4 and 2 respecitively
+    // when compared to c and d. Each time we calculate the reciprocals to 4 fewer bits which saves on calculation
+    // time and effectively performs the 4k right shift.
+    var rsize = precision;
+    for (int k = 1; k < 16; k++)
+    {
+        rsize -= 4;
+        var dv = 8 * k;
+        var a = Reciprocal(dv + 1, rsize + 2);
+        var b = Reciprocal(dv + 4, rsize + 1);
+        var c = Reciprocal(dv + 5, rsize);
+        var d = Reciprocal(dv + 6, rsize);
+        var v = a - b - c - d;
+
+        print(k, dv, a, b, c, d, v, rsize);
+        Console.WriteLine($"  + {sum.ToBinaryString(size)} {sum.ToHexString(size)}");
+        sum += v;
+        Console.WriteLine($"{GREEN}  = {sum.ToBinaryString(size)} {sum.ToHexString(size)}\n{NORMAL}");
     }
 
     // Create bit masks required to isolate integral and fractional parts when multiplying
@@ -136,15 +158,16 @@ static FixedPointBinary CalculatePi(int precision)
     return new FixedPointBinary((byte)((sum & integralMask) >> precision), sum & fractionalMask, precision);
 
     // Prints the output at each iteration - put in a local function here to de-clutter the main loop
-    void print(int k, int dv, BigInteger a, BigInteger b, BigInteger c, BigInteger d, BigInteger v, BigInteger vs)
+    void print(int k, int dv, BigInteger a, BigInteger b, BigInteger c, BigInteger d, BigInteger v, int rsize)
     {
+        var psize = rsize + 4;
+        var ssize = size - psize;
         Console.WriteLine($"{YELLOW}k = {k:d2}{NORMAL}");
-        Console.WriteLine($"    {a.ToString($"b{size}")[..size]} {a.ToHexString(size)} (4/{dv + 1:d3})");
-        Console.WriteLine($"  - {b.ToString($"b{size}")[..size]} {b.ToHexString(size)} (2/{dv + 4:d3})");
-        Console.WriteLine($"  - {c.ToString($"b{size}")[..size]} {c.ToHexString(size)} (1/{dv + 5:d3})");
-        Console.WriteLine($"  - {d.ToString($"b{size}")[..size]} {d.ToHexString(size)} (1/{dv + 6:d3})");
-        Console.WriteLine($"{GREEN}  = {v.ToString($"b{size}")[..size]} {v.ToHexString(size)}{NORMAL}");
-        Console.WriteLine($" >> {vs.ToString($"b{size}")[..size]} {vs.ToHexString(size)}");
+        Console.WriteLine($"    {a.ToBinaryString(psize, ssize)} {a.ToHexString(psize, ssize)} (4/{dv + 1:d3}) >> {ssize}");
+        Console.WriteLine($"  - {b.ToBinaryString(psize, ssize)} {b.ToHexString(psize, ssize)} (2/{dv + 4:d3}) >> {ssize}");
+        Console.WriteLine($"  - {c.ToBinaryString(psize, ssize)} {c.ToHexString(psize, ssize)} (1/{dv + 5:d3}) >> {ssize}");
+        Console.WriteLine($"  - {d.ToBinaryString(psize, ssize)} {d.ToHexString(psize, ssize)} (1/{dv + 6:d3}) >> {ssize}");
+        Console.WriteLine($"{GREEN}  = {v.ToBinaryString(psize, ssize)} {v.ToHexString(psize, ssize)}{NORMAL}");
     }
 }
 
@@ -196,5 +219,6 @@ record FixedPointBinary(byte IntegralPart, BigInteger FractionalPart, int Precis
 
 static class BigIntegerExtensions
 {
-    public static string ToHexString(this BigInteger v, int size) => v.ToString($"x{size / 4}")[..(size / 4)];
+    public static string ToHexString(this BigInteger v, int psize, int ssize = 0) => $"{new string('·', ssize / 4)}{v.ToString($"x{psize / 4}")[..(psize / 4)]}";
+    public static string ToBinaryString(this BigInteger v, int psize, int ssize = 0) => $"{new string('·', ssize)}{v.ToString($"b{psize}")[..psize]}";
 }
