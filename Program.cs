@@ -1,7 +1,5 @@
 ﻿using System.Numerics;
 
-// ****** Using Reciprocals instead of native divide
-
 // Program to sense check approach for calculating PI on my 8-bit relay computer using
 // the Bailey-Borwein-Plouffe formula (which calculates the first n digits of Pi in base 16).
 // This program will also provide values which can confirm the relay computer's output.
@@ -126,13 +124,7 @@ static FixedPointBinary CalculatePi(int precision)
         var v = a - b - c - d;
         var vs = v >> (4 * k);
 
-        Console.WriteLine($"{YELLOW}k = {k:d2}{NORMAL}");
-        Console.WriteLine($"    {a.ToString($"b{size}")[..size]} {a.ToHexString(size)} (4/{dv + 1:d3})");
-        Console.WriteLine($"  - {b.ToString($"b{size}")[..size]} {b.ToHexString(size)} (2/{dv + 4:d3})");
-        Console.WriteLine($"  - {c.ToString($"b{size}")[..size]} {c.ToHexString(size)} (1/{dv + 5:d3})");
-        Console.WriteLine($"  - {d.ToString($"b{size}")[..size]} {d.ToHexString(size)} (1/{dv + 6:d3})");
-        Console.WriteLine($"{GREEN}  = {v.ToString($"b{size}")[..size]} {v.ToHexString(size)}{NORMAL}");
-        Console.WriteLine($" >> {vs.ToString($"b{size}")[..size]} {vs.ToHexString(size)}");
+        print(k, dv, a, b, c, d, v, vs);
         Console.WriteLine($"  + {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}");
         sum += vs;
         Console.WriteLine($"{GREEN}  = {sum.ToString($"b{size}")[..size]} {sum.ToHexString(size)}\n{NORMAL}");
@@ -142,6 +134,18 @@ static FixedPointBinary CalculatePi(int precision)
     var integralMask = new BigInteger(0xF) << precision;
     var fractionalMask = (new BigInteger(0x1) << precision) - 1;
     return new FixedPointBinary((byte)((sum & integralMask) >> precision), sum & fractionalMask, precision);
+
+    // Prints the output at each iteration - put in a local function here to de-clutter the main loop
+    void print(int k, int dv, BigInteger a, BigInteger b, BigInteger c, BigInteger d, BigInteger v, BigInteger vs)
+    {
+        Console.WriteLine($"{YELLOW}k = {k:d2}{NORMAL}");
+        Console.WriteLine($"    {a.ToString($"b{size}")[..size]} {a.ToHexString(size)} (4/{dv + 1:d3})");
+        Console.WriteLine($"  - {b.ToString($"b{size}")[..size]} {b.ToHexString(size)} (2/{dv + 4:d3})");
+        Console.WriteLine($"  - {c.ToString($"b{size}")[..size]} {c.ToHexString(size)} (1/{dv + 5:d3})");
+        Console.WriteLine($"  - {d.ToString($"b{size}")[..size]} {d.ToHexString(size)} (1/{dv + 6:d3})");
+        Console.WriteLine($"{GREEN}  = {v.ToString($"b{size}")[..size]} {v.ToHexString(size)}{NORMAL}");
+        Console.WriteLine($" >> {vs.ToString($"b{size}")[..size]} {vs.ToHexString(size)}");
+    }
 }
 
 // Function to calculate a reciprocal to given precision
