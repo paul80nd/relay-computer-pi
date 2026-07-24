@@ -6,9 +6,13 @@ The YouTube series can be found [here](https://www.youtube.com/watch?v=tcgfeRkKp
 
 ## Building and running
 
-You will need [the .NET Core SDK](https://www.microsoft.com/net/download). You can then run this program from the CLI as follows:
+You will need [the .NET 10 SDK](https://dotnet.microsoft.com/download). You can then run this program from the CLI as follows:
 
 ```console
 dotnet build
 dotnet run
 ```
+
+## Licence
+
+This project is licensed under the MIT Licence – see [LICENCE.md](LICENCE.md) for details.
