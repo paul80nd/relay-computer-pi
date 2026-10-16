@@ -1,0 +1,12 @@
+# Weekly Dependabot PRs for NuGet packages. The project has no package references yet, so this
+# is a no-op until one is added; add a github-actions entry here when a CI workflow arrives.
+# (The .NET SDK / TargetFramework itself isn't managed by Dependabot — bump that by hand.)
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: '/'
+    schedule:
+      interval: weekly
+    groups:
+      nuget-minor-patch:
+        update-types: [minor, patch]
